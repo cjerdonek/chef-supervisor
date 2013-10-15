@@ -106,4 +106,6 @@ when "smartos"
   service "supervisord" do
     action [:enable]
   end
+else
+  raise "platform not supported: #{node['platform']}"
 end
