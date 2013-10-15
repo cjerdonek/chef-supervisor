@@ -118,4 +118,6 @@ when "redhat"
     supports :status => true, :restart => true, :reload => true
     action [:enable, :start]
   end
+else
+  raise "platform not supported: #{node['platform']}"
 end
