@@ -64,8 +64,13 @@ directory node['supervisor']['log_dir'] do
   recursive true
 end
 
+platforms = {
+  debian: ["debian", "ubuntu"],
+  smartos: ["smartos"]
+}
+
 case node['platform']
-when "debian", "ubuntu"
+when *platforms[:debian]
   template "/etc/init.d/supervisor" do
     source "supervisor.init.erb"
     owner "root"
@@ -83,7 +88,7 @@ when "debian", "ubuntu"
   service "supervisor" do
     action [:enable, :start]
   end
-when "smartos"
+when *platforms[:smartos]
   directory "/opt/local/share/smf/supervisord" do
     owner "root"
     group "root"
@@ -119,5 +124,10 @@ when "redhat", "centos", "amazon"
     action [:enable, :start]
   end
 else
-  raise "platform not supported: #{node['platform']}"
+  values = platforms.collect_concat { |key, vals| vals }
+  values = values.sort.join(", ")
+  Chef::Application.fatal! <<-eos
+This supervisor cookbook version does not support platform: #{node['platform']}. \
+You may use one of: #{values}
+eos
 end
