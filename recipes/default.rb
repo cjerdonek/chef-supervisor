@@ -69,8 +69,14 @@ platforms = {
   smartos: ["smartos"]
 }
 
+service_name = "supervisord"
+service_supports = nil
+service_actions = [:enable, :start]
+
 case node['platform']
 when *platforms[:debian]
+  service_name = "supervisor"
+
   template "/etc/init.d/supervisor" do
     source "supervisor.init.erb"
     owner "root"
@@ -85,10 +91,9 @@ when *platforms[:debian]
     mode "644"
   end
 
-  service "supervisor" do
-    action [:enable, :start]
-  end
 when *platforms[:smartos]
+  service_actions = [:enable]
+
   directory "/opt/local/share/smf/supervisord" do
     owner "root"
     group "root"
@@ -108,10 +113,9 @@ when *platforms[:smartos]
     action :nothing
   end
 
-  service "supervisord" do
-    action [:enable]
-  end
-when "redhat", "centos", "amazon"
+when *platforms[:rhel]
+  service_supports = { :status => true, :restart => true, :reload => true }
+
   template "/etc/init.d/supervisord" do
     source "supervisord.init.erb"
     owner "root"
@@ -119,10 +123,6 @@ when "redhat", "centos", "amazon"
     mode "755"
   end
 
-  service "supervisord" do
-    supports :status => true, :restart => true, :reload => true
-    action [:enable, :start]
-  end
 else
   values = platforms.collect_concat { |key, vals| vals }
   values = values.sort.join(", ")
@@ -130,4 +130,11 @@ else
 This supervisor cookbook version does not support platform: #{node['platform']}. \
 You may use one of: #{values}
 eos
+end
+
+service service_name do
+  if !service_supports.nil?
+    supports service_supports
+  end
+  action service_actions
 end
