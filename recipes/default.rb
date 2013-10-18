@@ -64,8 +64,14 @@ directory node['supervisor']['log_dir'] do
   recursive true
 end
 
+service_name = "supervisord"
+service_supports = nil
+service_actions = [:enable, :start]
+
 case node['platform']
 when "debian", "ubuntu"
+  service_name = "supervisor"
+
   template "/etc/init.d/supervisor" do
     source "supervisor.init.erb"
     owner "root"
@@ -80,10 +86,9 @@ when "debian", "ubuntu"
     mode "644"
   end
 
-  service "supervisor" do
-    action [:enable, :start]
-  end
 when "smartos"
+  service_actions = [:enable]
+
   directory "/opt/local/share/smf/supervisord" do
     owner "root"
     group "root"
@@ -103,7 +108,11 @@ when "smartos"
     action :nothing
   end
 
-  service "supervisord" do
-    action [:enable]
+end
+
+service service_name do
+  if !service_supports.nil?
+    supports service_supports
   end
+  action service_actions
 end
