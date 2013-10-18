@@ -87,8 +87,8 @@ def enable_service
   end
 
   template "#{node['supervisor']['dir']}/#{new_resource.service_name}.conf" do
-    source "program.conf.erb"
-    cookbook "supervisor"
+    cookbook new_resource.template_cookbook
+    source new_resource.template_source
     owner "root"
     group "root"
     mode "644"
