@@ -28,6 +28,18 @@ end
 
 # Until pip 1.4 drops, see https://github.com/pypa/pip/issues/1033
 python_pip "setuptools" do
+  only_if do
+    cmd = "pip --version"
+    version = `#{cmd}`.strip
+    Chef::Log.debug "#{cmd}: '#{version}'"
+    parts = version.split[1].split(".")
+    version = "#{parts[0]}.#{parts[1]}".to_f
+    do_upgrade = version < 1.4
+    if do_upgrade
+      Chef::Log.warn "pip version '#{version}': are you using an old version?"
+    end
+    do_upgrade
+  end
   action :upgrade
 end
 
