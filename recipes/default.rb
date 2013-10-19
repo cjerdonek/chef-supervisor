@@ -42,7 +42,7 @@ directory node['supervisor']['dir'] do
   mode "755"
 end
 
-template node['supervisor']['conffile'] do
+supervisor_conf_template = template node['supervisor']['conffile'] do
   source "supervisord.conf.erb"
   owner "root"
   group "root"
@@ -132,9 +132,24 @@ You may use one of: #{values}
 eos
 end
 
+# We structured things so that if a reload is needed because of a
+# configuration file change, it occurs before the start issued below.
+# Also note that the reload action for Chef's service resource does nothing
+# if the service is not started, which is fine since the start action
+# below will occur after anyways (loading the new config in the process).
+#
+# For the purposes of cross-checking the implementation and behavior of
+# the Chef service resource, I believe amazon and centos use the default
+# provider: Chef::Provider::Service::Init.
 service service_name do
   if !service_supports.nil?
     supports service_supports
   end
   action service_actions
+  # The service provider base class Chef::Provider::Service raises
+  # an UnsupportedAction in its reload_service method, so we check for
+  # reload support to avoid calling that just in case.
+  if supports[:reload]
+    subscribes :reload, "#{supervisor_conf_template}", :immediately
+  end
 end
