@@ -54,21 +54,6 @@ directory node['supervisor']['dir'] do
   mode "755"
 end
 
-supervisor_conf_template = template node['supervisor']['conffile'] do
-  source "supervisord.conf.erb"
-  owner "root"
-  group "root"
-  mode "644"
-  variables({
-    :inet_port => node['supervisor']['inet_port'],
-    :inet_username => node['supervisor']['inet_username'],
-    :inet_password => node['supervisor']['inet_password'],
-    :supervisord_minfds => node['supervisor']['minfds'],
-    :supervisord_minprocs => node['supervisor']['minprocs'],
-    :supervisor_version => node['supervisor']['version'],
-  })
-end
-
 directory node['supervisor']['log_dir'] do
   owner "root"
   group "root"
@@ -142,6 +127,21 @@ else
 This supervisor cookbook version does not support platform: #{node['platform']}. \
 You may use one of: #{values}
 eos
+end
+
+supervisor_conf_template = template node['supervisor']['conffile'] do
+  source "supervisord.conf.erb"
+  owner "root"
+  group "root"
+  mode "644"
+  variables({
+    :inet_port => node['supervisor']['inet_port'],
+    :inet_username => node['supervisor']['inet_username'],
+    :inet_password => node['supervisor']['inet_password'],
+    :supervisord_minfds => node['supervisor']['minfds'],
+    :supervisord_minprocs => node['supervisor']['minprocs'],
+    :supervisor_version => node['supervisor']['version'],
+  })
 end
 
 # We structured things so that if a reload is needed because of a
