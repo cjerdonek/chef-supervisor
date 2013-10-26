@@ -54,21 +54,6 @@ directory node['supervisor']['dir'] do
   mode "755"
 end
 
-supervisor_conf_template = template node['supervisor']['conffile'] do
-  source "supervisord.conf.erb"
-  owner "root"
-  group "root"
-  mode "644"
-  variables({
-    :inet_port => node['supervisor']['inet_port'],
-    :inet_username => node['supervisor']['inet_username'],
-    :inet_password => node['supervisor']['inet_password'],
-    :supervisord_minfds => node['supervisor']['minfds'],
-    :supervisord_minprocs => node['supervisor']['minprocs'],
-    :supervisor_version => node['supervisor']['version'],
-  })
-end
-
 directory node['supervisor']['log_dir'] do
   owner "root"
   group "root"
@@ -120,6 +105,27 @@ when "smartos"
     action :nothing
   end
 
+end
+
+# We create the conf file after the init.d script because changes to the
+# conf file template trigger the reload action on the service.  If the init.d
+# script hasn't been created yet, we get an error like the following:
+#
+#   service[supervisord]: unable to locate the init.d script!
+#
+supervisor_conf_template = template node['supervisor']['conffile'] do
+  source "supervisord.conf.erb"
+  owner "root"
+  group "root"
+  mode "644"
+  variables({
+    :inet_port => node['supervisor']['inet_port'],
+    :inet_username => node['supervisor']['inet_username'],
+    :inet_password => node['supervisor']['inet_password'],
+    :supervisord_minfds => node['supervisor']['minfds'],
+    :supervisord_minprocs => node['supervisor']['minprocs'],
+    :supervisor_version => node['supervisor']['version'],
+  })
 end
 
 # We structured things so that if a reload is needed because of a
