@@ -74,7 +74,7 @@ action :restart do
     converge_by("Restarting #{ new_resource }") do
       result = supervisorctl('restart')
       if !result.match(/^#{new_resource.name}: started$/)
-        raise "Supervisor service #{new_resource.name} was unable to be started: #{result}"
+        raise "Supervisor service #{new_resource.name} was unable to be restarted: #{result}"
       end
     end
   end
