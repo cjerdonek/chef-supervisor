@@ -18,15 +18,54 @@
 # limitations under the License.
 #
 
+# TODO: is there an easier or better way to achieve this?
+# For example, it would be good if by default supervisor could write its
+# main errors and child errors to stdout or stderr in addition to writing
+# them to its main and child log files.  See the following related
+# supervisor issues:
+#
+#   https://github.com/Supervisor/supervisor/pull/245
+#   https://github.com/Supervisor/supervisor/issues/170
+#   https://github.com/Supervisor/supervisor/pull/103
+#
+def display_logfile
+  if new_resource.supervisord_logfile.nil?
+    Chef::Log.info "You can set supervisord_logfile to see the log file tail when an error occurs."
+    return
+  end
+  begin
+    # Note that if the [supervisord] loglevel is configured to debug, then:
+    #
+    # "the supervisord log file will record the stderr/stdout output of its
+    #  child processes and extended info info about process state changes,
+    #  which is useful for debugging a process which isn’t starting properly."
+    #
+    cmd = "tail -n 20 #{new_resource.supervisord_logfile}"
+    result = Mixlib::ShellOut.new(cmd).run_command
+    lines = result.stdout
+  rescue Exception => e
+    Chef::Log.warn "unable to read log file: #{e}"
+    return
+  end
+  msg = "showing tail of log file #{new_resource.supervisord_logfile}:\n"
+  msg << "-" * 60 + "\n"
+  msg << lines
+  msg << "-" * 60
+  Chef::Log.debug msg
+end
+
+def raise_with_details(cmd, details)
+  if Chef::Log.debug?
+    display_logfile
+  end
+  raise "Supervisor command had unexpected output:\n$ #{cmd}\n#{details}\n--"
+end
+
 action :enable do
   converge_by("Enabling #{ new_resource }") do
     enable_service
   end
 end
-
-# TODO: figure out a way to report the error details so that it's not always
-# necessary to look at the log files to see what went wrong.  For example,
-# is there a way to get supervisorctl to display the stderr for the child process?
 
 action :disable do
   if current_resource.state == 'UNAVAILABLE'
@@ -46,9 +85,9 @@ action :start do
     Chef::Log.debug "#{ new_resource } is already started."
   else
     converge_by("Starting #{ new_resource }") do
-      result = supervisorctl('start')
+      cmd, result = supervisorctl('start')
       if !result.match(/#{new_resource.name}: started$/)
-        raise "Supervisor service #{new_resource.name} was unable to be started: #{result}"
+        raise_with_details(cmd, result)
       end
     end
   end
@@ -62,9 +101,9 @@ action :stop do
     Chef::Log.debug "#{ new_resource } is already stopped."
   else
     converge_by("Stopping #{ new_resource }") do
-      result = supervisorctl('stop')
+      cmd, result = supervisorctl('stop')
       if !result.match(/#{new_resource.name}: stopped$/)
-        raise "Supervisor service #{new_resource.name} was unable to be stopped: #{result}"
+        raise_with_details(cmd, result)
       end
     end
   end
@@ -76,9 +115,9 @@ action :restart do
     raise "Supervisor service #{new_resource.name} cannot be restarted because it does not exist"
   else
     converge_by("Restarting #{ new_resource }") do
-      result = supervisorctl('restart')
+      cmd, result = supervisorctl('restart')
       if !result.match(/^#{new_resource.name}: started$/)
-        raise "Supervisor service #{new_resource.name} was unable to be restarted: #{result}"
+        raise_with_details(cmd, result)
       end
     end
   end
@@ -116,7 +155,7 @@ end
 def supervisorctl(action)
   cmd = "supervisorctl #{action} #{cmd_line_args}"
   result = Mixlib::ShellOut.new(cmd).run_command
-  result.stdout.rstrip
+  return cmd, result.stdout.rstrip
 end
 
 def cmd_line_args
