@@ -24,6 +24,10 @@ action :enable do
   end
 end
 
+# TODO: figure out a way to report the error details so that it's not always
+# necessary to look at the log files to see what went wrong.  For example,
+# is there a way to get supervisorctl to display the stderr for the child process?
+
 action :disable do
   if current_resource.state == 'UNAVAILABLE'
     Chef::Log.info "#{new_resource} is already disabled."
