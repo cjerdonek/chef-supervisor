@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-supported_platforms = ["debian", "smartos", "ubuntu"]
+supported_platforms = %w(debian smartos ubuntu)
 
 if !supported_platforms.include? node['platform']
   if !node['supervisor']['support_required']
