@@ -75,23 +75,34 @@ directory node['supervisor']['log_dir'] do
   recursive true
 end
 
+template "/etc/default/supervisor" do
+  source "debian/supervisor.default.erb"
+  owner "root"
+  group "root"
+  mode "644"
+  only_if { platform_family?("debian") }
+end
+
 service_name = "supervisor"
 service_actions = [:enable, :start]
 service_supports = { :status => true, :restart => true }
 
+init_template_dir = value_for_platform_family(
+  ["rhel", "fedora"] => "rhel",
+  "debian" => "debian"
+)
+
 if node['platform'] != "smartos"
   template "/etc/init.d/supervisor" do
-    source "supervisor.init.erb"
+    source "#{init_template_dir}/supervisor.init.erb"
     owner "root"
     group "root"
     mode "755"
-  end
-
-  template "/etc/default/supervisor" do
-    source "supervisor.default.erb"
-    owner "root"
-    group "root"
-    mode "644"
+    variables({
+      # TODO: use this variable in the debian platform-family template
+      # instead of altering the PATH and calling "which supervisord".
+      :supervisord => "#{node['python']['prefix_dir']}/bin/supervisord"
+    })
   end
 
 else
