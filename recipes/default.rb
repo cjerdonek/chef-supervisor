@@ -61,14 +61,12 @@ directory node['supervisor']['log_dir'] do
   recursive true
 end
 
-service_name = "supervisord"
-service_supports = nil
+service_name = "supervisor"
 service_actions = [:enable, :start]
+service_supports = { :status => true, :restart => true }
 
 case node['platform']
 when "debian", "ubuntu"
-  service_name = "supervisor"
-
   template "/etc/init.d/supervisor" do
     source "supervisor.init.erb"
     owner "root"
@@ -84,7 +82,9 @@ when "debian", "ubuntu"
   end
 
 when "smartos"
+  service_name = "supervisord"
   service_actions = [:enable]
+  service_supports = nil
 
   directory "/opt/local/share/smf/supervisord" do
     owner "root"
@@ -144,8 +144,10 @@ service service_name do
   action service_actions
   # The service provider base class Chef::Provider::Service raises
   # an UnsupportedAction in its reload_service method, so we check for
-  # reload support to avoid calling that just in case.
+  # reload support in advance.
   if supports[:reload]
     subscribes :reload, "#{supervisor_conf_template}", :immediately
+  elsif supports[:restart]
+    subscribes :restart, "#{supervisor_conf_template}", :immediately
   end
 end
