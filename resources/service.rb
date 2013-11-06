@@ -22,6 +22,10 @@ actions :enable, :disable, :start, :stop, :restart
 default_action :enable
 
 attribute :service_name, :kind_of => String, :name_attribute => true
+attribute :template_cookbook, :kind_of => String, :default => 'supervisor'
+attribute :template_source, :kind_of => String, :default => 'program.conf.erb'
+attribute :supervisord_logfile, :kind_of => String, :default => nil
+
 attribute :command, :kind_of => String
 attribute :process_name, :kind_of => String, :default => '%(program_name)s'
 attribute :numprocs, :kind_of => Integer, :default => 1
