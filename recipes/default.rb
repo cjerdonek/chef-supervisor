@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-supported_platforms = %w(debian smartos ubuntu)
+supported_platforms = %w(amazon centos debian fedora redhat smartos ubuntu)
 
 if !supported_platforms.include? node['platform']
   if !node['supervisor']['support_required']
