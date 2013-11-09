@@ -47,7 +47,8 @@ case "$1" in
         status supervisord
     ;;
     restart)
-        stop
+        # Exit with an error if the shutdown was not successful.
+        stop || exit 1
         start
     ;;
     *)
